@@ -39,6 +39,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <sstream>
+#include <cstdint>
 
 // One output row.
 struct Row {
@@ -51,9 +53,57 @@ struct Row {
 // Push one Row{t, u_commanded, y_measured} per kept frame.
 std::vector<Row> decodeLog(const std::string& path) {
     std::vector<Row> rows;
+    std::ifstream f(path);
+    if (!f) return rows;
 
-    // TODO: your code here
-    (void)path;  // remove once you open the file
+    const unsigned int TARGET = 0x200;
+    bool haveFirst = false;
+    double t0 = 0.0;
+
+    std::string line;
+    while (std::getline(f, line)) {
+        size_t tsEnd = line.find(')');
+        if (line.empty() || line[0] != '(' || tsEnd == std::string::npos) continue;
+        double ts = std::stod(line.substr(1, tsEnd - 1));
+
+
+        std::istringstream rest(line.substr(tsEnd + 1));
+        std::string iface, frame;
+        rest >> iface >> frame;
+
+        size_t hashPos = frame.find('#');
+        if (hashPos == std::string::npos) continue;
+
+        unsigned int id = std::stoul(frame.substr(0, hashPos), nullptr, 16);
+        if (id != TARGET) continue;
+
+        std::string dataStr = frame.substr(hashPos + 1);
+        std::vector<uint8_t> data;
+        for (size_t i = 0; i + 1 < dataStr.size(); i += 2)
+            data.push_back(static_cast<uint8_t>(std::stoul(dataStr.substr(i, 2), nullptr, 16)));
+
+        if (data.size() < 8) continue;
+
+        int16_t rawMeas = static_cast<int16_t>(
+            static_cast<uint16_t>(data[0]) | (static_cast<uint16_t>(data[1]) << 8));
+        
+        int16_t rawCmd = static_cast<int16_t>(
+            static_cast<uint16_t>(data[2]) | (static_cast<uint16_t>(data[3]) << 8));
+
+
+        double y_measured  = rawMeas * 0.1;
+        double u_commanded = rawCmd  * 0.1;
+
+
+        if (!haveFirst) { t0 = ts; haveFirst = true; }
+
+        Row r;
+        r.t = ts - t0;
+        r.u_commanded = u_commanded;
+        r.y_measured  = y_measured; 
+        rows.push_back(r);
+        
+    }
 
     return rows;
 }
