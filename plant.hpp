@@ -17,7 +17,7 @@ struct Plant {
     // dt    : timestep, seconds
     // return: measured output angle, deg
     double step(double u_cmd, double dt) {
-        angle += u_cmd * dt;                   // placeholder dynamics -- replace this
+        angle += 1.3 * u_cmd * dt;                   // placeholder dynamics -- replace this
         return std::round(angle / 0.1) * 0.1;  // the sensor reads to 0.1 deg
     }
 
