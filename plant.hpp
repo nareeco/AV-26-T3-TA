@@ -8,18 +8,29 @@
 // (dynamics, gain, any nonlinearity, any lag), or the harness proves nothing.
 
 #include <cmath>
+#include <deque>
 
 struct Plant {
-    // add whatever state your model needs (velocity, motor-side angle, ...)
-    double angle = 0.0;
+    static constexpr double gain        = 1.3;
+    static constexpr double lagTimeStep = 0.195;
+    static constexpr double gapwidthDB  = 4.0;
 
-    // u_cmd : commanded velocity, deg/s
-    // dt    : timestep, seconds
-    // return: measured output angle, deg
+    double rate     = 0.0;
+    double drivePos = 0.0;
+    double angle = gapwidthDB / 8.0;
+
     double step(double u_cmd, double dt) {
-        angle += u_cmd * dt;                   // placeholder dynamics -- replace this
-        return std::round(angle / 0.1) * 0.1;  // the sensor reads to 0.1 deg
+        rate += (gain * u_cmd - rate) * (dt / lagTimeStep);
+        drivePos += rate * dt;
+
+        double half = gapwidthDB / 2.0;
+        if (drivePos - angle > half) {
+            angle = drivePos - half;
+        } else if (drivePos - angle < -half) {
+            angle = drivePos + half;
+        }
+        return std::round(angle / 0.1) * 0.1;
     }
 
-    void reset() { angle = 0.0; }
+    void reset() { rate = 0.0; drivePos = 0.0; angle = 0.0; }
 };
