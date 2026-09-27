@@ -11,7 +11,21 @@ there weren't anything odd in the logs. after running plot_data.py on the CSVs, 
 
 
 ### Part B - identify system
+From the step_test, u_commanded stayed at 15 deg/s for 3 seconds.
+Y_measured climed linearly after it's initial delay of 0.195 seconds which looks like a dead-time delay.
+From the points in Y_measured in t=1.0s (y=15/7 deg) and t=3.0s (y= 54.7 deg):
+The slope would be = (54.7-15.7)/(3.0-1.0) = 19.5 deg/same
+Since we set the slope to be 15, we can find the gain by dividing it with 19.5 which we get 1.3.
+We can check this against the reversal_test where the u=8deg/s and the slope is 10.4 deg and we get 1.3 for their gain.
+Since they both have the same value, it confirms the estimation.
 
+In the deadband_test, u_commanded alternates between +2 and -2 deg every 2 seconds however y_measured on moves in the first few seconds rising up to 2.6 deg-
+-and stays there until the end regardless of what u_commanded does.
+From this, a deadzone would not be possible since it would keep the output at = from the start, since the commanded would not affect it.
+Instead, it increased and froze after the first direction reversal which shows backlash where a mechancal gap must be traversed each time the direction changes.
+
+In the deadband_test, the output starts moving on 1.05 seconds. At 2 deg/s which implies roughly 2 x 1.05 = 2.1 deg of drive travel is needed before output moves.
+This is an estimate of the backlash gap size.
 
 
 ### Part C - control design choices
